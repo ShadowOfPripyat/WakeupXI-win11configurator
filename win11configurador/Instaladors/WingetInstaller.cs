@@ -11,7 +11,7 @@ namespace win11configurador.Installers
         {
             WingetCheckWizard(); // Comprobar si winget está instalado
 
-            var groupedItems = LectorJson.LoadJsonWithGroups("winget.json");
+            var groupedItems = LectorJson.LoadWingetJsonWithGroups("winget.json");
             if (groupedItems == null || groupedItems.Count == 0)
             {
                 AnsiConsole.Write(

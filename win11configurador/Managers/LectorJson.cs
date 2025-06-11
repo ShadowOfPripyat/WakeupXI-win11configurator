@@ -81,7 +81,8 @@ namespace win11configurador.Managers
                 Console.WriteLine($"Error inesperado: {ex.Message}");
             }
         }
-        public static Dictionary<string, List<WingetProgram>> LoadJsonWithGroups(string filename)
+
+        public static Dictionary<string, List<WingetProgram>> LoadWingetJsonWithGroups(string filename)
         {
             string path = Path.Combine(".\\Dades\\", filename);
             try
@@ -105,6 +106,33 @@ namespace win11configurador.Managers
             {
                 Console.WriteLine($"Error cargando JSON: {ex.Message}");
                 return new Dictionary<string, List<WingetProgram>>();
+            }
+
+        }
+        public static Dictionary<string, List<ConfigurationItem>> LoadConfigurationsWithGroups(string filename)
+        {
+            string path = Path.Combine(".\\Dades\\", filename);
+            try
+            {
+                string json = File.ReadAllText(path);
+                var settings = new JsonSerializerSettings
+                {
+                    ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+                    {
+                        NamingStrategy = new Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy()
+                    }
+                };
+                // Deserializa el objeto raíz
+                var root = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<ConfigurationItem>>>>(json, settings);
+                // Extrae el grupo "All_configurations"
+                if (root != null && root.TryGetValue("All_configurations", out var allConfigs))
+                    return allConfigs;
+                return new Dictionary<string, List<ConfigurationItem>>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando JSON: {ex.Message}");
+                return new Dictionary<string, List<ConfigurationItem>>();
             }
         }
 

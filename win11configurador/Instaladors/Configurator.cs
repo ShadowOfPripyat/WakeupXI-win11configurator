@@ -11,8 +11,10 @@ namespace win11configurador.Installers
     {
         public void Run()
         {
-            List<ConfigurationItem> items = LectorJson.LoadJson<ConfigurationItem>("configuracions.json");
-            if (items == null || items.Count == 0)
+            // Usar el método específico para configuraciones
+            var groupedConfigs = LectorJson.LoadConfigurationsWithGroups("configuracions.json");
+
+            if (groupedConfigs == null || groupedConfigs.Count == 0)
             {
                 AnsiConsole.Write(
                     new Panel("[yellow]No se encontraron configuraciones disponibles.[/]")
@@ -24,15 +26,13 @@ namespace win11configurador.Installers
                 return;
             }
 
-            var grouped = items.GroupBy(i => i.Category);
-
-            foreach (var group in grouped)
+            // Mostrar tablas por categoría
+            foreach (var group in groupedConfigs)
             {
                 AnsiConsole.Write(new Rule($"[bold blue]{group.Key}[/]").RuleStyle("blue"));
 
-                // Elimina duplicados por Title
-                List<ConfigurationItem> distinctConfigs = group
-                    .GroupBy(p => p.Title)
+                var distinctConfigs = group.Value
+                    .GroupBy(p => p.Title ?? string.Empty)
                     .Select(g => g.First())
                     .ToList();
 
@@ -52,25 +52,67 @@ namespace win11configurador.Installers
 
                 foreach (var config in distinctConfigs)
                 {
-                    string status = config.AlreadyDone ? "[green]Aplicada[/]" : "[red]No aplicada[/]";
-                    table.AddRow($"[cyan]{config.ObtenirID()}[/]", config.Title, config.Description, status);
+                    string status = config.PreviouslyApplied ? "[green]Aplicada[/]" : "[red]No aplicada[/]";
+                    table.AddRow($"[cyan]{config.ObtenirID()}[/]", config.Title ?? "", config.Description ?? "", status);
                 }
 
                 AnsiConsole.Write(table);
             }
 
-            // Selección múltiple de configuraciones no aplicadas
-            var multiSelectionPrompt = new MultiSelectionPrompt<ConfigurationItem>()
-                .Title("[bold]Selecciona las configuraciones a aplicar:[/]")
-                .PageSize(10)
+            // Preparar selección múltiple con agrupación por categorías y opción de seleccionar todas
+            var configMap = new Dictionary<(string Categoria, string Titulo), ConfigurationItem>();
+            var allConfigs = new List<(string Categoria, string Titulo)>();
+            var categoryGroups = new Dictionary<string, List<string>>();
+
+            foreach (var cat in groupedConfigs)
+            {
+                var catList = new List<string>();
+                foreach (var conf in cat.Value)
+                {
+                    conf.Category = cat.Key;
+                    var display = conf.Title ?? "";
+                    configMap[(cat.Key, display)] = conf;
+                    catList.Add(display);
+                    allConfigs.Add((cat.Key, display));
+                }
+                if (catList.Count > 0)
+                    categoryGroups[cat.Key] = catList;
+            }
+
+            var prompt = new MultiSelectionPrompt<string>()
+                .Title("[bold]Selecciona las configuraciones a aplicar o revertir:[/]")
+                .PageSize(12)
                 .MoreChoicesText("[grey](Usa las flechas para navegar, [blue]<espacio>[/] para seleccionar, [green]<enter>[/] para confirmar)[/]")
-                .UseConverter(c => $"{c.Category}: {c.Title} ({c.ObtenirID()})");
+                .InstructionsText("[grey](Presiona [blue]<espacio>[/] para alternar selección, [green]<enter>[/] para aceptar)[/]");
 
-            multiSelectionPrompt.AddChoices(
-                items.Where(c => !c.AlreadyDone)
-            );
+            const string todosKey = "(Selecciona solo esta casilla para aplicar todas)";
+            prompt.AddChoiceGroup("Todas las configuraciones", new[] { todosKey });
 
-            var selectedConfigs = AnsiConsole.Prompt(multiSelectionPrompt);
+            foreach (var cat in categoryGroups)
+            {
+                prompt.AddChoiceGroup(cat.Key, cat.Value.ToArray());
+            }
+
+            var selected = AnsiConsole.Prompt(prompt);
+
+            List<ConfigurationItem> selectedConfigs;
+            if (selected.Contains("Todas las configuraciones") || selected.Contains(todosKey))
+            {
+                selectedConfigs = allConfigs.Select(k => configMap[k]).Distinct().ToList();
+            }
+            else
+            {
+                selectedConfigs = selected
+                    .SelectMany(sel =>
+                        categoryGroups
+                            .Where(cat => cat.Value.Contains(sel))
+                            .Select(cat => (cat.Key, sel))
+                    )
+                    .Where(key => configMap.ContainsKey(key))
+                    .Select(key => configMap[key])
+                    .Distinct()
+                    .ToList();
+            }
 
             if (selectedConfigs.Count == 0)
             {
@@ -78,16 +120,28 @@ namespace win11configurador.Installers
                 return;
             }
 
+            // Preguntar si se desea aplicar o revertir las configuraciones seleccionadas
+            bool revertir = AnsiConsole.Confirm("[yellow]¿Deseas revertir las configuraciones seleccionadas en vez de aplicarlas?[/]", false);
+
             foreach (ConfigurationItem config in selectedConfigs)
             {
+                string accion = revertir ? "Revirtiendo" : "Aplicando";
+                string comando = revertir ? config.RevertCommand : config.Command;
+
+                if (string.IsNullOrWhiteSpace(comando))
+                {
+                    AnsiConsole.MarkupLine($"[yellow]No hay comando de {(revertir ? "reversión" : "aplicación")} para: [bold]{config.Title}[/][/]");
+                    continue;
+                }
+
                 AnsiConsole.Status()
                     .Spinner(Spinner.Known.Dots)
                     .SpinnerStyle(Style.Parse("yellow"))
-                    .Start($"[yellow]Aplicando configuración: {config.Title}[/]", ctx =>
+                    .Start($"[yellow]{accion} configuración: {config.Title}[/]", ctx =>
                     {
-                        PowerShellExecutor.ExecuteCommand(config.Command, true);
+                        PowerShellExecutor.ExecuteCommand(comando, true);
                     });
-                AnsiConsole.MarkupLine($"[green]✔ Configuración aplicada:[/] [bold]{config.Title}[/]");
+                AnsiConsole.MarkupLine($"[green]✔ {accion} configuración:[/] [bold]{config.Title}[/]");
             }
 
             AnsiConsole.Write(

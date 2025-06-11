@@ -36,11 +36,11 @@
 </ItemGroup>
 
 <ItemGroup>
-  <Content Include="WakeupXI_icon256.ico" />
+  <Compile Remove="Instaladors\UNUSED-ConfiguratoroldSelectionMethod.cs" />
 </ItemGroup>
 
 <ItemGroup>
-  <None Include="Instaladors\UNUSED-ConfiguratoroldSelectionMethod.cs" />
+  <Content Include="WakeupXI_icon256.ico" />
 </ItemGroup>
 
   <ItemGroup>
