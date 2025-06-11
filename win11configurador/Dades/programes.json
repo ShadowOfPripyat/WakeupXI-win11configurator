@@ -1,0 +1,10 @@
+[
+  {
+    "Category": "Tools",
+    "Id": 1,
+    "Name": "7-Zip",
+    "FileName": "7zSetup.exe",
+    "DownloadUrl": "https://www.7-zip.org/a/7z2301.exe",
+    "PreviouslyInstalled": false
+  }
+]

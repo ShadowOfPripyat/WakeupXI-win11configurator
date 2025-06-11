@@ -1,0 +1,9 @@
+[
+  {
+    "Category": "Experiencia usuari",
+    "Id": 1,
+    "Title": "Disable animations",
+    "Command": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics' -Value 0",
+    "AlreadyDone": false
+  }
+]

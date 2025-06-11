@@ -1,0 +1,30 @@
+[
+  {
+    "category": "Utilitats",
+    "id": 1,
+    "name": "7-Zip",
+    "winget_packageid": "7zip.7zip",
+    "previously_installed": false
+  },
+    {
+    "category": "Utilitats",
+    "id": 1,
+    "name": "7-Zip",
+    "winget_packageid": "7zip.7zip",
+    "previously_installed": false
+  },
+  {
+    "category": "Multimedia",
+    "id": 2,
+    "name": "VLC media player",
+    "winget_packageid": "VideoLAN.VLC",
+    "previously_installed": false
+  },
+  {
+    "category": "Jocs",
+    "id": 3,
+    "name": "Steam",
+    "winget_packageid": "Valve.Steam",
+    "previously_installed": false
+  }
+]
