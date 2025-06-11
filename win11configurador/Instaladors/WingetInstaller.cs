@@ -8,7 +8,7 @@ namespace win11configurador.Installers
     public class WingetInstaller
     {
         public void Run()
-        {           
+        {
             WingetCheckWizard(); // Comprobar si winget está instalado
 
             var groupedItems = LectorJson.LoadJsonWithGroups("winget.json");
@@ -24,11 +24,11 @@ namespace win11configurador.Installers
                 return;
             }
 
-            // Diccionario para mapear el string mostrado al objeto WingetProgram
-            var programMap = new Dictionary<string, WingetProgram>();
+            // Diccionario para mapear (categoria, nombre) al objeto WingetProgram
+            var programMap = new Dictionary<(string Categoria, string Nombre), WingetProgram>();
 
             // Construir la estructura de grupos
-            var allPrograms = new List<string>();
+            var allPrograms = new List<(string Categoria, string Nombre)>();
             var categoryGroups = new Dictionary<string, List<string>>();
 
             foreach (var cat in groupedItems)
@@ -37,11 +37,10 @@ namespace win11configurador.Installers
                 foreach (var prog in cat.Value.Where(p => !p.PreviouslyInstalled))
                 {
                     prog.Category = cat.Key;
-                    var display = $"{prog.Name}";
-                    var key = $"{cat.Key}::{display}";
-                    programMap[key] = prog;
-                    catList.Add(key);
-                    allPrograms.Add(key);
+                    var display = prog.Name;
+                    programMap[(cat.Key, display)] = prog;
+                    catList.Add(display);
+                    allPrograms.Add((cat.Key, display));
                 }
                 if (catList.Count > 0)
                     categoryGroups[cat.Key] = catList;
@@ -55,12 +54,13 @@ namespace win11configurador.Installers
                 .InstructionsText("[grey](Presiona [blue]<espacio>[/] para alternar selección, [green]<enter>[/] para aceptar)[/]");
 
             // Grupo raíz: Todos los programas
-            prompt.AddChoiceGroup("Todos los programas", new[] { "(Selecciona solo esta casilla para instalarlos todos)" });
+            const string todosKey = "(Selecciona solo esta casilla para instalarlos todos)";
+            prompt.AddChoiceGroup("Todos los programas", new[] { todosKey });
 
             // Subgrupos: categorías
             foreach (var cat in categoryGroups)
             {
-                prompt.AddChoiceGroup(cat.Key, cat.Value.Select(p => p).ToArray());
+                prompt.AddChoiceGroup(cat.Key, cat.Value.ToArray());
             }
 
             // Mostrar el prompt
@@ -68,15 +68,21 @@ namespace win11configurador.Installers
 
             // Si el usuario selecciona "Todos los programas", selecciona todos los programas
             List<WingetProgram> selectedPrograms;
-            if (selected.Contains("Todos los programas"))
+            if (selected.Contains("Todos los programas") || selected.Contains(todosKey))
             {
                 selectedPrograms = allPrograms.Select(k => programMap[k]).Distinct().ToList();
             }
             else
             {
+                // Buscar el programa por nombre y categoría
                 selectedPrograms = selected
-                    .Where(s => programMap.ContainsKey(s))
-                    .Select(s => programMap[s])
+                    .SelectMany(sel =>
+                        categoryGroups
+                            .Where(cat => cat.Value.Contains(sel))
+                            .Select(cat => (cat.Key, sel))
+                    )
+                    .Where(key => programMap.ContainsKey(key))
+                    .Select(key => programMap[key])
                     .Distinct()
                     .ToList();
             }
@@ -115,6 +121,8 @@ namespace win11configurador.Installers
             AnsiConsole.Console.Input.ReadKey(true);
             AnsiConsole.Console.Clear();
         }
+
+
 
 
 
