@@ -27,17 +27,18 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Publish portable self-contained EXE
-        run: |
-          dotnet publish \
-            --configuration Release \
-            --runtime ${{ matrix.runtime }} \
-            --self-contained true \
-            -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -p:UseAppHost=true \
-            -o ${{ github.workspace }}/publish/${{ matrix.runtime }}
+- name: Publish portable self-contained EXE
+  run: |
+    dotnet publish ^
+      --configuration Release ^
+      --runtime ${{ matrix.runtime }} ^
+      --self-contained true ^
+      -p:PublishSingleFile=true ^
+      -p:PublishTrimmed=true ^
+      -p:IncludeNativeLibrariesForSelfExtract=true ^
+      -p:UseAppHost=true ^
+      -o publish\${{ matrix.runtime }}
+  shell: cmd
 
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
