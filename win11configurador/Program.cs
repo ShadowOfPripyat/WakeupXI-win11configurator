@@ -1,14 +1,17 @@
 ﻿using System;
-using win11configurador.coses;
-// using win11configurador.Instaladors;
+using win11configurador.Managers;
+using win11configurador.Installers;
+using win11configurador.plantillesjson;
 
 
-namespace WindowsConfigurator
+namespace Instalador
 {
     class Program
     {
         static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8; // Ensure UTF-8 encoding for console output
+            PowerShellExecutor.ExecuteCommand("ipconfig", true); // Example command to test PowerShell execution
             menu();
         }
         static void menu()

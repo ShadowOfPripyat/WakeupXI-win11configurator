@@ -5,16 +5,16 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using win11configurador.coses;
+using win11configurador.plantillesjson;
 using win11configurador.Managers;
 
-namespace WindowsConfigurator
+namespace win11configurador.Installers
 {
     public class ManualInstaller
     {
         private readonly string downloadPath = "manualprograms"; // Folder to save downloaded files
 
-        public void Run()
+        public async Task Run() // <-- Cambiado a async Task
         {
             List<ManualProgram> items = LectorJson.LoadJson<ManualProgram>("programes.json");
 
@@ -30,6 +30,8 @@ namespace WindowsConfigurator
             List<ManualProgram> msiList = new();
             List<ManualProgram> exeList = new();
 
+            using HttpClient ClientHTTP = new HttpClient(); // <-- HttpClient reutilizable
+
             foreach (ManualProgram program in items.Where(i => !i.PreviouslyInstalled))
             {
                 string fullPath = Path.Combine(downloadPath, program.FileName);
@@ -40,8 +42,12 @@ namespace WindowsConfigurator
                     Console.WriteLine($"Downloading: {program.Name}...");
                     try
                     {
-                        using var client = new WebClient();
-                        client.DownloadFile(program.DownloadUrl, fullPath);
+                        using var response = await ClientHTTP.GetAsync(program.DownloadUrl);
+                        response.EnsureSuccessStatusCode();
+                        using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            await response.Content.CopyToAsync(fs);
+                        }
                         Console.WriteLine($"Downloaded: {program.FileName}");
                     }
                     catch (Exception ex)

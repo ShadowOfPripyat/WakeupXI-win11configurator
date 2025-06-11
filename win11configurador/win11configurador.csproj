@@ -2,19 +2,45 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <PublishAot>False</PublishAot>
+    <PublishTrimmed>False</PublishTrimmed>
+    <Title>WakeupXI</Title>
+    <Authors>ShadowOfPripyat</Authors>
+    <PackageProjectUrl>https://github.com/ShadowOfPripyat/WakeupXI-win11configurator/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ShadowOfPripyat/WakeupXI-win11configurator/</RepositoryUrl>
+    <ApplicationIcon>WakeupXI_icon256.ico</ApplicationIcon>
+    <FileVersion>0.4-Incomplet</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <IsPublishable>False</IsPublishable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Spectre.Console" Version="0.50.0" />
   </ItemGroup>
 
 <ItemGroup>
   <Content Include="Dades\**\*.*">
     <CopyToOutputDirectory>Always</CopyToOutputDirectory>
   </Content>
+</ItemGroup>
+
+<ItemGroup>
+  <Content Include="WakeupXI_icon256.ico" />
+</ItemGroup>
+
+<ItemGroup>
+  <None Include="Instaladors\UNUSED-ConfiguratoroldSelectionMethod.cs" />
 </ItemGroup>
 
   <ItemGroup>

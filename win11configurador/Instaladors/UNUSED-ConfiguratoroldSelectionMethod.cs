@@ -7,7 +7,7 @@ using Spectre.Console;
 
 namespace win11configurador.Installers
 {
-    public class Configurator
+    public class ConfiguratoroldSelectionMethod
     {
         public void Run()
         {
@@ -59,37 +59,39 @@ namespace win11configurador.Installers
                 AnsiConsole.Write(table);
             }
 
-            // Selección múltiple de configuraciones no aplicadas
-            var multiSelectionPrompt = new MultiSelectionPrompt<ConfigurationItem>()
-                .Title("[bold]Selecciona las configuraciones a aplicar:[/]")
-                .PageSize(10)
-                .MoreChoicesText("[grey](Usa las flechas para navegar, [blue]<espacio>[/] para seleccionar, [green]<enter>[/] para confirmar)[/]")
-                .UseConverter(c => $"{c.Category}: {c.Title} ({c.ObtenirID()})");
+            // Solicitar IDs a aplicar
+            var input = AnsiConsole.Prompt(
+                new TextPrompt<string>("[bold]Introduce los IDs de configuración a aplicar (separados por comas):[/]")
+                    .PromptStyle("green")
+                    .AllowEmpty());
 
-            multiSelectionPrompt.AddChoices(
-                items.Where(c => !c.AlreadyDone)
-            );
-
-            var selectedConfigs = AnsiConsole.Prompt(multiSelectionPrompt);
-
-            if (selectedConfigs.Count == 0)
+            if (string.IsNullOrWhiteSpace(input))
             {
-                AnsiConsole.MarkupLine("[yellow]No se seleccionaron configuraciones. Saliendo...[/]");
+                AnsiConsole.MarkupLine("[yellow]No se introdujeron IDs. Saliendo...[/]");
                 return;
             }
 
-            foreach (ConfigurationItem config in selectedConfigs)
-            {
-                AnsiConsole.Status()
-                    .Spinner(Spinner.Known.Dots)
-                    .SpinnerStyle(Style.Parse("yellow"))
-                    .Start($"[yellow]Aplicando configuración: {config.Title}[/]", ctx =>
-                    {
-                        PowerShellExecutor.ExecuteCommand(config.Command, true);
-                    });
-                AnsiConsole.MarkupLine($"[green]✔ Configuración aplicada:[/] [bold]{config.Title}[/]");
-            }
+            string[] ids = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+            foreach (string id in ids)
+            {
+                IEnumerable<ConfigurationItem> matches = items.Where(i => i.ObtenirID() == id && !i.AlreadyDone);
+
+                foreach (ConfigurationItem match in matches)
+                {
+                    AnsiConsole.Status()
+                        .Spinner(Spinner.Known.Dots)
+                        .SpinnerStyle(Style.Parse("yellow"))
+                        .Start($"[yellow]Aplicando configuración: {match.Title}[/]", ctx =>
+                        {
+                            string comanda = match.Command.ToString();
+                            //AnsiConsole.MarkupLine(comanda); // Debugging line to show the command
+                            PowerShellExecutor.ExecuteCommand(match.Command, true);
+                        });
+                    AnsiConsole.MarkupLine($"[green]✔ Configuración aplicada:[/] [bold]{match.Title}[/]");
+                }
+            }
+           /////
             AnsiConsole.Write(
                 new Panel("[grey]Proceso finalizado. Pulsa cualquier tecla para volver al menú principal.[/]")
                     .Border(BoxBorder.Rounded)

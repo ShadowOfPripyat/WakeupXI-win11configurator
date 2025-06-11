@@ -1,30 +1,65 @@
-[
-  {
-    "category": "Utilitats",
-    "id": 1,
-    "name": "7-Zip",
-    "winget_packageid": "7zip.7zip",
-    "previously_installed": false
-  },
-    {
-    "category": "Utilitats",
-    "id": 1,
-    "name": "7-Zip",
-    "winget_packageid": "7zip.7zip",
-    "previously_installed": false
-  },
-  {
-    "category": "Multimedia",
-    "id": 2,
-    "name": "VLC media player",
-    "winget_packageid": "VideoLAN.VLC",
-    "previously_installed": false
-  },
-  {
-    "category": "Jocs",
-    "id": 3,
-    "name": "Steam",
-    "winget_packageid": "Valve.Steam",
-    "previously_installed": false
+{
+  "All_programs": {
+    "Utilities": [
+      { "id": 1, "name": "7-Zip",      "winget_packageid": "7zip.7zip",                 "previously_installed": false },
+      { "id": 2, "name": "PowerToys",   "winget_packageid": "Microsoft.PowerToys",      "previously_installed": false },
+      { "id": 3, "name": "Filelight",   "winget_packageid": "KDE.Filelight",            "previously_installed": false },
+      { "id": 4, "name": "Balabolka",   "winget_packageid": "CrossPlusA.Balabolka",     "previously_installed": false },
+      { "id": 5, "name": "WSA Pacman",  "winget_packageid": "alesimula.wsa_pacman",     "previously_installed": false },
+      { "id": 6, "name": "Notepad++",   "winget_packageid": "Notepad++.Notepad++",      "previously_installed": false },
+      { "id": 7, "name": "PowerShell",  "winget_packageid": "Microsoft.PowerShell",     "previously_installed": false }
+    ],
+    "Internet": [
+      { "id": 1, "name": "Google Chrome",      "winget_packageid": "Google.Chrome",               "previously_installed": false },
+      { "id": 2, "name": "Mozilla Firefox",    "winget_packageid": "Mozilla.Firefox.ca",         "previously_installed": false },
+      { "id": 3, "name": "Transmission",       "winget_packageid": "Transmission.Transmission",  "previously_installed": false },
+      { "id": 4, "name": "ProtonVPN",          "winget_packageid": "Proton.ProtonVPN",           "previously_installed": false },
+      { "id": 5, "name": "Wireshark",          "winget_packageid": "WiresharkFoundation.Wireshark","previously_installed": false },
+      { "id": 6, "name": "WireGuard",          "winget_packageid": "WireGuard.WireGuard",        "previously_installed": false }
+    ],
+    "Games": [
+      { "id": 1, "name": "Steam",                  "winget_packageid": "Valve.Steam",                  "previously_installed": false },
+      { "id": 2, "name": "Epic Games Launcher",    "winget_packageid": "EpicGames.EpicGamesLauncher",  "previously_installed": false },
+      { "id": 3, "name": "osu!",                   "winget_packageid": "ppy.osu",                      "previously_installed": false },
+      { "id": 4, "name": "SideQuest",              "winget_packageid": "SideQuestVR.SideQuest",        "previously_installed": false },
+      { "id": 5, "name": "Revolt",                 "winget_packageid": "Revolt.RevoltDesktop",         "previously_installed": false },
+      { "id": 6, "name": "Discord",                "winget_packageid": "Discord.Discord",              "previously_installed": false },
+      { "id": 7, "name": "Vencord",                "winget_packageid": "Vendicated.Vencord",           "previously_installed": false },
+      { "id": 8, "name": "Telegram",               "winget_packageid": "Telegram.TelegramDesktop",     "previously_installed": false }
+    ],
+    "Programming": [
+      { "id": 1, "name": "Visual Studio 2022",   "winget_packageid": "Microsoft.VisualStudio.2022.Community", "previously_installed": false },
+      { "id": 2, "name": "Visual Studio Code",   "winget_packageid": "Microsoft.VisualStudioCode",            "previously_installed": false },
+      { "id": 3, "name": "Git",                  "winget_packageid": "Git.Git",                             "previously_installed": false },
+      { "id": 4, "name": "Python 3.10",          "winget_packageid": "Python.Python.3.10",                  "previously_installed": false },
+      { "id": 5, "name": "MySQL Workbench",      "winget_packageid": "Oracle.MySQLWorkbench",                "previously_installed": false },
+      { "id": 6, "name": "pgAdmin",              "winget_packageid": "PostgreSQL.pgAdmin",                  "previously_installed": false }
+    ],
+    "Multimedia": [
+      { "id": 1, "name": "VLC media player",   "winget_packageid": "VideoLAN.VLC",        "previously_installed": false },
+      { "id": 2, "name": "OBS Studio",         "winget_packageid": "OBSProject.OBSStudio","previously_installed": false },
+      { "id": 3, "name": "Audacity",           "winget_packageid": "Audacity.Audacity",   "previously_installed": false },
+      { "id": 4, "name": "FFmpeg",             "winget_packageid": "Gyan.FFmpeg",         "previously_installed": false },
+      { "id": 5, "name": "HandBrake",          "winget_packageid": "HandBrake.HandBrake", "previously_installed": false }
+    ],
+    "Emulators": [
+      { "id": 1, "name": "PCSX2",      "winget_packageid": "PCSX2Team.PCSX2",      "previously_installed": false },
+      { "id": 2, "name": "RetroArch",  "winget_packageid": "Libretro.RetroArch",   "previously_installed": false },
+      { "id": 3, "name": "Dolphin",    "winget_packageid": "DolphinEmulator.Dolphin","previously_installed": false }
+    ],
+    "Design": [
+      { "id": 1, "name": "Inkscape",   "winget_packageid": "Inkscape.Inkscape",      "previously_installed": false },
+      { "id": 2, "name": "Krita",      "winget_packageid": "KDE.Krita",              "previously_installed": false },
+      { "id": 3, "name": "Blender",    "winget_packageid": "BlenderFoundation.Blender","previously_installed": false },
+      { "id": 4, "name": "MyPaint",    "winget_packageid": "MyPaint.MyPaint",        "previously_installed": false },
+      { "id": 5, "name": "MuseScore",  "winget_packageid": "Musescore.Musescore",    "previously_installed": false },
+      { "id": 6, "name": "LMMS",       "winget_packageid": "LMMS.LMMS",              "previously_installed": false }
+    ],
+    "System": [
+      { "id": 1, "name": "VirtualBox",  "winget_packageid": "Oracle.VirtualBox",          "previously_installed": false },
+      { "id": 2, "name": "VirtViewer",  "winget_packageid": "RedHat.VirtViewer",          "previously_installed": false },
+      { "id": 3, "name": "LibreOffice", "winget_packageid": "TheDocumentFoundation.LibreOffice","previously_installed": false },
+      { "id": 4, "name": "Sysinternals", "winget_packageid": "Microsoft.Sysinternals",    "previously_installed": false }
+    ]
   }
-]
+}

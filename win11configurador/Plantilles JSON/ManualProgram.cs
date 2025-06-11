@@ -1,4 +1,4 @@
-﻿namespace win11configurador.coses
+﻿namespace win11configurador.plantillesjson
 {
     public class ManualProgram
     {
@@ -9,6 +9,6 @@
         public string DownloadUrl { get; set; }  // ← NEW
         public bool PreviouslyInstalled { get; set; }
 
-        public string GetDisplayId() => $"{Category.ToLower()[0]}{Id:00}";
+        public string ObtenirID() => $"{Category.ToLower()[0]}{Id:00}";
     }
 }

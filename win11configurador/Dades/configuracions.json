@@ -1,9 +1,170 @@
 [
   {
-    "Category": "Experiencia usuari",
-    "Id": 1,
-    "Title": "Disable animations",
-    "Command": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics' -Value 0",
-    "AlreadyDone": false
+    "category": "Sistema",
+    "id": 1,
+    "title": "Activar Windows",
+    "description": "Descarrega l'script d'activació de 'massgrave.dev', i s'executa de forma desatesa'",
+    "command": "iwr -uri 'https://raw.githubusercontent.com/massgravel/Microsoft-Activation-Scripts/master/MAS/Separate-Files-Version/Activators/HWID_Activation.cmd' -OutFile \"$env:TEMP\\HWID_Activation.cmd\"; Start-Process -FilePath \"$env:TEMP\\HWID_Activation.cmd\" -ArgumentList \"/HWID /HWID-NoEditionChange\" -Wait",
+    "alreadydone": false
+  },
+  {
+    "category": "Experiencia usuari",
+    "id": 1,
+    "title": "Disable animations",
+    "description": "Disables all the Windows animations by changing a registry key.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics' -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Experiencia usuari",
+    "id": 2,
+    "title": "Disable transparency effects",
+    "description": "Turns off transparency effects in the Windows UI for better performance.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'EnableTransparency' -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Experiencia usuari",
+    "id": 3,
+    "title": "Show file extensions",
+    "description": "Enables the display of file extensions in File Explorer.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'HideFileExt' -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Experiencia usuari",
+    "id": 4,
+    "title": "Show hidden files",
+    "description": "Reveals hidden files and folders in File Explorer.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Value 1",
+    "alreadydone": false
+  },
+  {
+    "category": "Privadesa",
+    "id": 5,
+    "title": "Disable telemetry",
+    "description": "Limits data collection by setting the telemetry level to minimum.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowTelemetry' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Privadesa",
+    "id": 6,
+    "title": "Disable advertising ID",
+    "description": "Disables the advertising ID used for ad personalization.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Privadesa",
+    "id": 7,
+    "title": "Disable location services",
+    "description": "Turns off location services for all users.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location' -Name 'Value' -Value 'Deny'",
+    "alreadydone": false
+  },
+  {
+    "category": "Debloat",
+    "id": 8,
+    "title": "Remove Xbox apps",
+    "description": "Removes Xbox-related apps that are bundled with Windows.",
+    "command": "Get-AppxPackage *xbox* | Remove-AppxPackage",
+    "alreadydone": false
+  },
+  {
+    "category": "Debloat",
+    "id": 9,
+    "title": "Uninstall OneDrive",
+    "description": "Removes Microsoft OneDrive from the system.",
+    "command": "taskkill /f /im OneDrive.exe; Start-Process 'C:\\Windows\\SysWOW64\\OneDriveSetup.exe' /uninstall",
+    "alreadydone": false
+  },
+  {
+    "category": "Debloat",
+    "id": 10,
+    "title": "Remove built-in apps",
+    "description": "Removes common built-in apps like Weather, News, and Groove Music.",
+    "command": "Get-AppxPackage *windowscommunicationsapps* | Remove-AppxPackage; Get-AppxPackage *bing* | Remove-AppxPackage",
+    "alreadydone": false
+  },
+  {
+    "category": "Rendiment",
+    "id": 11,
+    "title": "Disable startup delay",
+    "description": "Reduces the delay on startup apps to improve boot speed.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Rendiment",
+    "id": 12,
+    "title": "Disable hibernation",
+    "description": "Turns off hibernation to save disk space and reduce background activity.",
+    "command": "powercfg -h off",
+    "alreadydone": false
+  },
+  {
+    "category": "Rendiment",
+    "id": 13,
+    "title": "Disable indexing on C:",
+    "description": "Improves performance by turning off search indexing on the main drive.",
+    "command": "Stop-Service -Name 'WSearch'; Set-Service -Name 'WSearch' -StartupType Disabled",
+    "alreadydone": false
+  },
+  {
+    "category": "Neteja",
+    "id": 14,
+    "title": "Clear temp files",
+    "description": "Deletes temporary files to free up space.",
+    "command": "Remove-Item -Path $env:TEMP\\\\* -Recurse -Force",
+    "alreadydone": false
+  },
+  {
+    "category": "Neteja",
+    "id": 15,
+    "title": "Clear Windows Update cache",
+    "description": "Frees up space by removing old Windows Update files.",
+    "command": "Stop-Service wuauserv; Remove-Item -Path 'C:\\Windows\\SoftwareDistribution\\Download\\\\*' -Recurse -Force; Start-Service wuauserv",
+    "alreadydone": false
+  },
+  {
+    "category": "Actualitzacions",
+    "id": 16,
+    "title": "Pause Windows updates",
+    "description": "Temporarily disables Windows updates.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'NoAutoUpdate' -Type DWord -Value 1",
+    "alreadydone": false
+  },
+  {
+    "category": "Actualitzacions",
+    "id": 17,
+    "title": "Disable driver updates via Windows Update",
+    "description": "Prevents automatic driver updates through Windows Update.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching' -Name 'SearchOrderConfig' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Altres",
+    "id": 18,
+    "title": "Disable Cortana",
+    "description": "Removes Cortana from the taskbar and disables it.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCortana' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Altres",
+    "id": 19,
+    "title": "Disable tips and suggestions",
+    "description": "Stops Windows from showing tips, tricks, and suggestions.",
+    "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Type DWord -Value 0",
+    "alreadydone": false
+  },
+  {
+    "category": "Altres",
+    "id": 20,
+    "title": "Disable lock screen background image",
+    "description": "Disables the background image on the lock screen.",
+    "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen' -Type DWord -Value 1",
+    "alreadydone": false
   }
 ]
