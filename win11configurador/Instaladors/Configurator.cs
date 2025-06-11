@@ -47,13 +47,22 @@ namespace win11configurador.Installers
                     .AddColumn("[bold]ID[/]")
                     .AddColumn("[bold]NOMBRE[/]")
                     .AddColumn("[bold]DESCRIPCION[/]")
-                    .AddColumn("[bold]ESTADO[/]")
+                    .AddColumn("[bold]APLICADA ANTERIORMENTE[/]")      // Valor de PreviouslyApplied
+                    .AddColumn("[bold]ESTADO[/]") // Resultado de check_command
                     .LeftAligned();
 
                 foreach (var config in distinctConfigs)
                 {
                     string status = config.PreviouslyApplied ? "[green]Aplicada[/]" : "[red]No aplicada[/]";
-                    table.AddRow($"[cyan]{config.ObtenirID()}[/]", config.Title ?? "", config.Description ?? "", status);
+                    string realStatus = GetConfigRealStatus(config);
+
+                    table.AddRow(
+                        $"[cyan]{config.ObtenirID()}[/]",
+                        config.Title ?? "",
+                        config.Description ?? "",
+                        status,
+                        realStatus
+                    );
                 }
 
                 AnsiConsole.Write(table);
@@ -151,6 +160,27 @@ namespace win11configurador.Installers
                     .Padding(1, 1));
             AnsiConsole.Console.Input.ReadKey(true);
             AnsiConsole.Console.Clear();
+        }
+        private string GetConfigRealStatus(ConfigurationItem config)
+        {
+            if (string.IsNullOrWhiteSpace(config.CheckCommand))
+                return "[grey]No comprobable[/]";
+
+            try
+            {
+                // Ejecutar el comando y obtener la salida
+                string output = PowerShellExecutor.ExecuteCommand(config.CheckCommand, true)?.Trim();
+                if (output != null && output.Equals("true", StringComparison.OrdinalIgnoreCase))
+                    return "[green]Aplicada[/]";
+                else if (output != null && output.Equals("false", StringComparison.OrdinalIgnoreCase))
+                    return "[red]No aplicada[/]";
+                else
+                    return $"[yellow]{output}[/]";
+            }
+            catch (Exception ex)
+            {
+                return $"[red]Error[/]";
+            }
         }
     }
 }
