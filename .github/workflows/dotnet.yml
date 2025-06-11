@@ -1,19 +1,15 @@
-# .github/workflows/build-portable-windows.yml
-name: Build Portable Windows Console App
+# .github/workflows/build-and-release.yml
+name: Build and Release Portable Windows Console App
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-release:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        runtime: [ win-x64, win-arm64 ]
 
     steps:
       - name: Checkout code
@@ -24,16 +20,18 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore dependencies
+      - name: Restore NuGet packages
         run: dotnet restore
 
-        - name: Publish portable self-contained EXE
-  run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:UseAppHost=true -o publish/${{ matrix.runtime }}
+      - name: Publish self-contained EXE for Windows
+        run: dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:UseAppHost=true -o publish
 
+      - name: Rename EXE for clarity
+        run: Rename-Item -Path "publish\YourAppName.exe" -NewName "YourAppName-win-x64.exe"
 
-
-      - name: Upload executable artifact
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: portable-${{ matrix.runtime }}
-          path: publish/${{ matrix.runtime }}/
+          files: publish/WakeupXI.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
