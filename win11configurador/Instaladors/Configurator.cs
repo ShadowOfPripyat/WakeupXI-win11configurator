@@ -11,13 +11,12 @@ namespace win11configurador.Installers
     {
         public void Run()
         {
-            // Usar el método específico para configuraciones
             var groupedConfigs = LectorJson.LoadConfigurationsWithGroups("configuracions.json");
 
             if (groupedConfigs == null || groupedConfigs.Count == 0)
             {
                 AnsiConsole.Write(
-                    new Panel("[yellow]No se encontraron configuraciones disponibles.[/]")
+                    new Panel("[yellow]No se encontraron configuraciones disponibles.\nDebe haber un error en el archivo 'configuracions.json'.[/]")
                         .Border(BoxBorder.Rounded)
                         .Header("[bold red]Atención[/]", Justify.Center)
                         .Padding(1, 1));
@@ -26,7 +25,7 @@ namespace win11configurador.Installers
                 return;
             }
 
-            // Mostrar tablas por categoría
+            // Mostrar tablas por categoría (igual que antes)
             foreach (var group in groupedConfigs)
             {
                 AnsiConsole.Write(new Rule($"[bold blue]{group.Key}[/]").RuleStyle("blue"));
@@ -42,30 +41,48 @@ namespace win11configurador.Installers
                     continue;
                 }
 
-                var table = new Table()
+                // Comprobar estado real con spinner
+                var realStatuses = new Dictionary<string, string>();
+                AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Dots)
+                    .SpinnerStyle(Style.Parse("yellow"))
+                    .Start("[yellow]Comprobando estado real de las configuraciones...[/]", ctx =>
+                    {
+                        foreach (var config in distinctConfigs)
+                        {
+                            realStatuses[config.ObtenirID()] = GetConfigRealStatus(config);
+                        }
+                    });
+
+                Table table = new Table()
                     .Border(TableBorder.Rounded)
                     .AddColumn("[bold]ID[/]")
                     .AddColumn("[bold]NOMBRE[/]")
                     .AddColumn("[bold]DESCRIPCION[/]")
-                    .AddColumn("[bold]APLICADA ANTERIORMENTE[/]")      // Valor de PreviouslyApplied
-                    .AddColumn("[bold]ESTADO[/]") // Resultado de check_command
+                    .AddColumn("[bold]TIPO OPERACION[/]")
+                    .AddColumn("[bold]APLICADA ANTERIORMENTE[/]")
+                    .AddColumn("[bold]ESTADO[/]")
                     .LeftAligned();
+
+                int tableWidth = Math.Max(60, AnsiConsole.Console.Profile.Width - 4); // Mínimo 60 para evitar tablas demasiado pequeñas
+                table.Width(tableWidth);
 
                 foreach (var config in distinctConfigs)
                 {
-                    string status = config.PreviouslyApplied ? "[green]Aplicada[/]" : "[red]No aplicada[/]";
-                    string realStatus = GetConfigRealStatus(config);
-
+                    string status = config.PreviouslyApplied ? "[green]SI[/]" : "[red]NO[/]";
+                    string realStatus = realStatuses.TryGetValue(config.ObtenirID(), out var rs) ? rs : "[grey]Desconocido[/]";
                     table.AddRow(
-                        $"[cyan]{config.ObtenirID()}[/]",
-                        config.Title ?? "",
-                        config.Description ?? "",
+                        $"[cyan]{Markup.Escape(config.ObtenirID())}[/]",
+                        Markup.Escape(config.Title ?? ""),
+                        Markup.Escape(config.Description ?? ""),
+                        Markup.Escape(config.OperationType ?? ""),
                         status,
                         realStatus
                     );
                 }
 
                 AnsiConsole.Write(table);
+                AnsiConsole.WriteLine();
             }
 
             // Preparar selección múltiple con agrupación por categorías y opción de seleccionar todas
@@ -102,55 +119,98 @@ namespace win11configurador.Installers
                 prompt.AddChoiceGroup(cat.Key, cat.Value.ToArray());
             }
 
+            // Marcar por defecto las configuraciones ya aplicadas
+            var preselected = allConfigs
+                .Where(k => configMap[k].PreviouslyApplied)
+                .Select(k => k.Item2)
+                .ToList();
+
+            foreach (var cat in categoryGroups)
+            {
+                foreach (var display in cat.Value)
+                {
+                    if (preselected.Contains(display))
+                        prompt.Select(display);
+                }
+            }
+
             var selected = AnsiConsole.Prompt(prompt);
-
-            List<ConfigurationItem> selectedConfigs;
-            if (selected.Contains("Todas las configuraciones") || selected.Contains(todosKey))
+            // Si el usuario seleccionó solo la opción para seleccionar todas, seleccionamos todo manualmente
+            if (selected.Contains(todosKey) && selected.Count == 1)
             {
-                selectedConfigs = allConfigs.Select(k => configMap[k]).Distinct().ToList();
-            }
-            else
-            {
-                selectedConfigs = selected
-                    .SelectMany(sel =>
-                        categoryGroups
-                            .Where(cat => cat.Value.Contains(sel))
-                            .Select(cat => (cat.Key, sel))
-                    )
-                    .Where(key => configMap.ContainsKey(key))
-                    .Select(key => configMap[key])
-                    .Distinct()
-                    .ToList();
+                selected = allConfigs.Select(k => k.Titulo).Distinct().ToList();
             }
 
-            if (selectedConfigs.Count == 0)
+            // Determinar qué configuraciones estaban aplicadas antes
+            var appliedBefore = allConfigs
+                .Where(k => configMap[k].PreviouslyApplied)
+                .ToList();
+
+            // Determinar seleccionadas y deseleccionadas
+            var selectedKeys = selected
+                .SelectMany(sel =>
+                    categoryGroups
+                        .Where(cat => cat.Value.Contains(sel))
+                        .Select(cat => (cat.Key, sel))
+                )
+                .ToHashSet();
+
+            var toApply = allConfigs
+                .Where(k => selectedKeys.Contains(k) && !configMap[k].PreviouslyApplied)
+                .Select(k => configMap[k])
+                .Distinct()
+                .ToList();
+
+            var toRevert = appliedBefore
+                .Where(k => !selectedKeys.Contains(k))
+                .Select(k => configMap[k])
+                .Distinct()
+                .ToList();
+
+            if (toApply.Count == 0 && toRevert.Count == 0)
             {
-                AnsiConsole.MarkupLine("[yellow]No se seleccionaron configuraciones. Saliendo...[/]");
+                AnsiConsole.MarkupLine("[yellow]No se seleccionaron cambios. Saliendo...[/]");
                 return;
             }
 
-            // Preguntar si se desea aplicar o revertir las configuraciones seleccionadas
-            bool revertir = AnsiConsole.Confirm("[yellow]¿Deseas revertir las configuraciones seleccionadas en vez de aplicarlas?[/]", false);
-
-            foreach (ConfigurationItem config in selectedConfigs)
+            // Aplicar nuevas configuraciones
+            foreach (ConfigurationItem config in toApply)
             {
-                string accion = revertir ? "Revirtiendo" : "Aplicando";
-                string comando = revertir ? config.RevertCommand : config.Command;
-
+                string comando = config.Command;
                 if (string.IsNullOrWhiteSpace(comando))
                 {
-                    AnsiConsole.MarkupLine($"[yellow]No hay comando de {(revertir ? "reversión" : "aplicación")} para: [bold]{config.Title}[/][/]");
+                    AnsiConsole.MarkupLine($"[yellow]No hay comando de aplicación para: [bold]{config.Title}[/][/]");
                     continue;
                 }
 
                 AnsiConsole.Status()
                     .Spinner(Spinner.Known.Dots)
                     .SpinnerStyle(Style.Parse("yellow"))
-                    .Start($"[yellow]{accion} configuración: {config.Title}[/]", ctx =>
+                    .Start($"[yellow]Aplicando configuración: {config.Title}[/]", ctx =>
                     {
                         PowerShellExecutor.ExecuteCommand(comando, true);
                     });
-                AnsiConsole.MarkupLine($"[green]✔ {accion} configuración:[/] [bold]{config.Title}[/]");
+                AnsiConsole.MarkupLine($"[green]✔ Aplicada configuración:[/] [bold]{config.Title}[/]");
+            }
+
+            // Revertir configuraciones deseleccionadas
+            foreach (ConfigurationItem config in toRevert)
+            {
+                string comando = config.RevertCommand;
+                if (string.IsNullOrWhiteSpace(comando))
+                {
+                    AnsiConsole.MarkupLine($"[yellow]No hay comando de reversión para: [bold]{config.Title}[/][/]");
+                    continue;
+                }
+
+                AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Dots)
+                    .SpinnerStyle(Style.Parse("yellow"))
+                    .Start($"[yellow]Revirtiendo configuración: {config.Title}[/]", ctx =>
+                    {
+                        PowerShellExecutor.ExecuteCommand(comando, true);
+                    });
+                AnsiConsole.MarkupLine($"[green]✔ Revertida configuración:[/] [bold]{config.Title}[/]");
             }
 
             AnsiConsole.Write(
@@ -161,6 +221,7 @@ namespace win11configurador.Installers
             AnsiConsole.Console.Input.ReadKey(true);
             AnsiConsole.Console.Clear();
         }
+
         private string GetConfigRealStatus(ConfigurationItem config)
         {
             if (string.IsNullOrWhiteSpace(config.CheckCommand))
@@ -168,18 +229,40 @@ namespace win11configurador.Installers
 
             try
             {
-                // Ejecutar el comando y obtener la salida
                 string output = PowerShellExecutor.ExecuteCommand(config.CheckCommand, true)?.Trim();
+
                 if (output != null && output.Equals("true", StringComparison.OrdinalIgnoreCase))
-                    return "[green]Aplicada[/]";
+                    return "[green]ACTIVADO[/]";
                 else if (output != null && output.Equals("false", StringComparison.OrdinalIgnoreCase))
-                    return "[red]No aplicada[/]";
+                    return "[red]DESACTIVADO[/]";
+                else if (!string.IsNullOrWhiteSpace(output) && output.ToLower().Contains("acceso denegado") || output.ToLower().Contains("access is denied"))
+                {
+                    // Preguntar al usuario si quiere elevar a administrador
+                    bool elevar = AnsiConsole.Confirm("[yellow]Permiso denegado. ¿Quieres intentar ejecutar como administrador?[/]");
+                    if (elevar)
+                    {
+                        // Aquí podrías relanzar el programa como admin o mostrar un mensaje
+                        AnsiConsole.MarkupLine("[yellow]Por favor, reinicia la aplicación como administrador.[/]");
+                        return "[yellow]Requiere privilegios de administrador[/]";
+                    }
+                    else
+                    {
+                        return "[yellow]Permiso denegado (no elevado)[/]";
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(output))
+                {
+                    // Escapar cualquier error para evitar markup
+                    return $"[yellow]{Markup.Escape(output)}[/]";
+                }
                 else
-                    return $"[yellow]{output}[/]";
+                {
+                    return "[grey]Desconocido[/]";
+                }
             }
             catch (Exception ex)
             {
-                return $"[red]Error[/]";
+                return $"[red]Error![/] {Markup.Escape(ex.Message)}";
             }
         }
     }

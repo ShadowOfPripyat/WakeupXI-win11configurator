@@ -4,39 +4,81 @@
       {
         "id": 1,
         "title": "Activar Windows",
-        "description": "Descarrega l'script d'activaci� de 'massgrave.dev', i s'executa de forma desatesa'",
-        "command": "iwr -uri 'https://raw.githubusercontent.com/massgravel/Microsoft-Activation-Scripts/master/MAS/Separate-Files-Version/Activators/HWID_Activation.cmd' -OutFile \"$env:TEMP\\HWID_Activation.cmd\"; Start-Process -FilePath \"$env:TEMP\\HWID_Activation.cmd\" -ArgumentList \"/HWID /HWID-NoEditionChange\" -Wait",
-        "check_command": "if ((Get-Command 'slmgr' -ErrorAction SilentlyContinue) -and ((slmgr /dlv) -match 'HWID')) { Write-Output 'true' } else { Write-Output 'false' }",
+        "description": "Descarrega i executa l'script d'activació de 'massgrave.dev' de forma desatesa.",
+        "command": "iwr -uri 'https://raw.githubusercontent.com/massgravel/Microsoft-Activation-Scripts/master/MAS/Separate-Files-Version/Activators/HWID_Activation.cmd' -OutFile \\\"$env:TEMP\\HWID_Activation.cmd\\\"; Start-Process -FilePath \\\"$env:TEMP\\HWID_Activation.cmd\\\" -ArgumentList \\\"/HWID /HWID-NoEditionChange\\\" -Wait",
+        "check_command": "if((Get-CimInstance SoftwareLicensingProduct -Filter \\\"Name like 'Windows%'\\\" | where { $_.PartialProductKey } | select -ExpandProperty LicenseStatus) -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "script",
         "revert_command": "",
-        "previouslyapplied": false
-      }
-    ],
-    "Experiencia usuari": [
-      {
-        "id": 1,
-        "title": "Disable animations",
-        "description": "Disables all the Windows animations by changing a registry key.",
-        "command": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics' -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics').WindowMetrics -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WindowMetrics' -Value 1",
         "previouslyapplied": false
       },
       {
         "id": 2,
-        "title": "Disable transparency effects",
-        "description": "Turns off transparency effects in the Windows UI for better performance.",
-        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'EnableTransparency' -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'EnableTransparency').EnableTransparency -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'EnableTransparency' -Value 1",
+        "title": "Habilitar hibernació",
+        "description": "Habilita la hibernació per estalviar energia i reprendre ràpidament.",
+        "command": "powercfg /hibernate on",
+        "check_command": "if ((powercfg /a) -match \\\"Hibernation has been enabled\\\") { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "command",
+        "revert_command": "powercfg /hibernate off",
         "previouslyapplied": false
       },
       {
         "id": 3,
-        "title": "Show file extensions",
-        "description": "Enables the display of file extensions in File Explorer.",
+        "title": "Desactivar pantalla de bloqueig",
+        "description": "Desactiva la pantalla de bloqueig per accedir directament a l'inici de sessió.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen' -Type DWord -Value 1",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen').NoLockScreen -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen' -Type DWord -Value 0",
+        "previouslyapplied": false
+      },
+      {
+        "id": 4,
+        "title": "Desactivar fitxer de paginació",
+        "description": "Desactiva el fitxer de paginació per millorar el rendiment en equips amb prou memòria RAM.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management' -Name 'PagingFiles' -Value ''",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management' -Name 'PagingFiles').PagingFiles -eq '') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management' -Name 'PagingFiles' -Value 'C:\\pagefile.sys 0 0'",
+        "previouslyapplied": false
+      }
+    ],
+    "Experiència d'usuari": [
+      {
+        "id": 5,
+        "title": "Desactivar Game Bar i Game DVR",
+        "description": "Elimina processos en segon pla relacionats amb la gravació de jocs.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR' -Name 'AppCaptureEnabled' -Type DWord -Value 0; Set-ItemProperty -Path 'HKCU:\\System\\GameConfigStore' -Name 'GameDVR_Enabled' -Type DWord -Value 0",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\System\\GameConfigStore' -Name 'GameDVR_Enabled').GameDVR_Enabled -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "",
+        "previouslyapplied": false
+      },
+      {
+        "id": 6,
+        "title": "Ocultar 'Notícies i interessos' de la barra de tasques",
+        "description": "Desactiva el widget de notícies de la barra de tasques.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Feeds' -Name 'ShellFeedsTaskbarViewMode' -Type DWord -Value 2",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Feeds' -Name 'ShellFeedsTaskbarViewMode').ShellFeedsTaskbarViewMode -eq 2) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Feeds' -Name 'ShellFeedsTaskbarViewMode' -Type DWord -Value 1",
+        "previouslyapplied": false
+      },
+      {
+        "id": 7,
+        "title": "Desactivar consells i suggeriments",
+        "description": "Evita que Windows mostri consells, trucs i suggeriments.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Type DWord -Value 0",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled').'SubscribedContent-338389Enabled' -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Type DWord -Value 1",
+        "previouslyapplied": false
+      }
+    ],
+    "Explorador de Windows": [
+      {
+        "id": 8,
+        "title": "Mostrar extensions d'arxiu",
+        "description": "Habilita la visualització de les extensions d'arxiu a l'Explorador de fitxers.",
         "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'HideFileExt' -Value 0",
         "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'HideFileExt').HideFileExt -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
@@ -44,21 +86,41 @@
         "previouslyapplied": false
       },
       {
-        "id": 4,
-        "title": "Show hidden files",
-        "description": "Reveals hidden files and folders in File Explorer.",
+        "id": 9,
+        "title": "Mostrar fitxers ocults",
+        "description": "Mostra fitxers i carpetes ocultes a l'Explorador de fitxers.",
         "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Value 1",
         "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden').Hidden -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
         "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Value 2",
         "previouslyapplied": false
+      },
+      {
+        "id": 10,
+        "title": "Restaurar menú contextual antic",
+        "description": "Reverteix al menú contextual clàssic a l'Explorador de fitxers.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' -Name '(Default)' -Value ''",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' -Name '(Default)').'(Default)' -eq '') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Remove-Item -Path 'HKCU:\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' -Recurse",
+        "previouslyapplied": false
+      },
+      {
+        "id": 11,
+        "title": "Desactivar Accés Ràpid",
+        "description": "Desactiva l'Accés Ràpid a l'Explorador de fitxers per millorar el rendiment.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'LaunchTo' -Value 1",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'LaunchTo').LaunchTo -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'LaunchTo' -Value 0",
+        "previouslyapplied": false
       }
     ],
     "Privadesa": [
       {
-        "id": 5,
-        "title": "Disable telemetry",
-        "description": "Limits data collection by setting the telemetry level to minimum.",
+        "id": 12,
+        "title": "Desactivar telemetria",
+        "description": "Limita la recollida de dades establint el nivell de telemetria al mínim.",
         "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowTelemetry' -Type DWord -Value 0",
         "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowTelemetry').AllowTelemetry -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
@@ -66,9 +128,9 @@
         "previouslyapplied": false
       },
       {
-        "id": 6,
-        "title": "Disable advertising ID",
-        "description": "Disables the advertising ID used for ad personalization.",
+        "id": 13,
+        "title": "Desactivar ID de publicitat",
+        "description": "Desactiva l'ID de publicitat utilitzat per a la personalització d'anuncis.",
         "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Type DWord -Value 0",
         "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled').Enabled -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
@@ -76,21 +138,51 @@
         "previouslyapplied": false
       },
       {
-        "id": 7,
-        "title": "Disable location services",
-        "description": "Turns off location services for all users.",
+        "id": 14,
+        "title": "Desactivar serveis de localització",
+        "description": "Desactiva els serveis de localització per a tots els usuaris.",
         "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location' -Name 'Value' -Value 'Deny'",
         "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location' -Name 'Value').Value -eq 'Deny') { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
         "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location' -Name 'Value' -Value 'Allow'",
         "previouslyapplied": false
+      },
+      {
+        "id": 15,
+        "title": "Desactivar sincronització de configuració",
+        "description": "Evita que Windows sincronitzi la configuració entre dispositius.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SettingSync' -Name 'Disabled' -Type DWord -Value 1",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SettingSync' -Name 'Disabled').Disabled -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SettingSync' -Name 'Disabled' -Type DWord -Value 0",
+        "previouslyapplied": false
+      },
+      {
+        "id": 16,
+        "title": "Desactivar Windows Spotlight",
+        "description": "Desactiva Windows Spotlight a la pantalla de bloqueig.",
+        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Lock Screen' -Name 'CreativeContentEnabled' -Type DWord -Value 0",
+        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Lock Screen' -Name 'CreativeContentEnabled').CreativeContentEnabled -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Lock Screen' -Name 'CreativeContentEnabled' -Type DWord -Value 1",
+        "previouslyapplied": false
+      },
+      {
+        "id": 17,
+        "title": "Desactivar informes d'errors de Windows",
+        "description": "Desactiva el servei d'informes d'errors de Windows per reduir l'activitat en segon pla.",
+        "command": "Set-Service -Name 'WerSvc' -StartupType Disabled; Stop-Service -Name 'WerSvc'",
+        "check_command": "if ((Get-Service WerSvc).Status -eq 'Stopped') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "service",
+        "revert_command": "Set-Service -Name 'WerSvc' -StartupType Manual; Start-Service -Name 'WerSvc'",
+        "previouslyapplied": false
       }
     ],
     "Debloat": [
       {
-        "id": 8,
-        "title": "Remove Xbox apps",
-        "description": "Removes Xbox-related apps that are bundled with Windows.",
+        "id": 18,
+        "title": "Eliminar totes les aplicacions Xbox",
+        "description": "Elimina les aplicacions relacionades amb Xbox incloses a Windows.",
         "command": "Get-AppxPackage *xbox* | Remove-AppxPackage",
         "check_command": "if (!(Get-AppxPackage *xbox*)) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "command",
@@ -98,74 +190,65 @@
         "previouslyapplied": false
       },
       {
-        "id": 9,
-        "title": "Uninstall OneDrive",
-        "description": "Removes Microsoft OneDrive from the system.",
+        "id": 19,
+        "title": "Desinstalar OneDrive",
+        "description": "Elimina Microsoft OneDrive del sistema.",
         "command": "taskkill /f /im OneDrive.exe; Start-Process 'C:\\Windows\\SysWOW64\\OneDriveSetup.exe' /uninstall",
         "check_command": "if (!(Get-Process OneDrive -ErrorAction SilentlyContinue)) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "command",
-        "revert_command": "Start-Process 'C:\\Windows\\SysWOW64\\OneDriveSetup.exe' -ArgumentList '/install'",
+        "revert_command": "",
         "previouslyapplied": false
       },
       {
-        "id": 10,
-        "title": "Remove built-in apps",
-        "description": "Removes common built-in apps like Weather, News, and Groove Music.",
-        "command": "Get-AppxPackage *windowscommunicationsapps* | Remove-AppxPackage; Get-AppxPackage *bing* | Remove-AppxPackage",
-        "check_command": "if (!(Get-AppxPackage *windowscommunicationsapps*) -and !(Get-AppxPackage *bing*)) { Write-Output 'true' } else { Write-Output 'false' }",
+        "id": 20,
+        "title": "Eliminar Cortana",
+        "description": "Desinstal·la Cortana del sistema.",
+        "command": "Get-AppxPackage *Microsoft.549981C3F5F10* | Remove-AppxPackage",
+        "check_command": "if (!(Get-AppxPackage *Microsoft.549981C3F5F10*)) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "command",
+        "revert_command": "",
+        "previouslyapplied": false
+      },
+      {
+        "id": 21,
+        "title": "Forçar desinstalacio de Microsoft Edge",
+        "description": "Elimina Microsoft Edge del sistema, incloent les seves dependències.",
+        "command": "(Get-AppxPackage *Microsoft.MicrosoftEdge* | Remove-AppxPackage; Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like '*Microsoft.MicrosoftEdge*' } | Remove-AppxProvisionedPackage -Online)",
+        "check_command": "if (!(Get-AppxPackage *Microsoft.MicrosoftEdge*)) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "command",
+        "revert_command": "",
+        "previouslyapplied": false
+      },
+      {
+        "id": 22,
+        "title": "Eliminar aplicacions preinstalades",
+        "description": "Desinstal·la totes les aplicacions preinstal·lades que no són essencials per al funcionament del sistema.",
+        "command": "Get-AppxPackage -AllUsers | Where-Object { $_.Name -notlike '*Microsoft.WindowsStore*' -and $_.Name -notlike '*Microsoft.MicrosoftEdge*' } | Remove-AppxPackage",
+        "check_command": "if (!(Get-AppxPackage -AllUsers | Where-Object { $_.Name -notlike '*Microsoft.WindowsStore*' -and $_.Name -notlike '*Microsoft.MicrosoftEdge*' })) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "command",
         "revert_command": "",
         "previouslyapplied": false
       }
     ],
     "Rendiment": [
-      {
-        "id": 11,
-        "title": "Disable startup delay",
-        "description": "Reduces the delay on startup apps to improve boot speed.",
-        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec' -Type DWord -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec').StartupDelayInMSec -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize' -Name 'StartupDelayInMSec' -Type DWord -Value 1",
-        "previouslyapplied": false
-      },
-      {
-        "id": 12,
-        "title": "Disable hibernation",
-        "description": "Turns off hibernation to save disk space and reduce background activity.",
-        "command": "powercfg -h off",
-        "check_command": "if ((powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE) -match '0') { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "command",
-        "revert_command": "powercfg -h on",
-        "previouslyapplied": false
-      },
-      {
-        "id": 13,
-        "title": "Disable indexing on C:",
-        "description": "Improves performance by turning off search indexing on the main drive.",
-        "command": "Stop-Service -Name 'WSearch'; Set-Service -Name 'WSearch' -StartupType Disabled",
-        "check_command": "if ((Get-Service WSearch).Status -eq 'Stopped') { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "service",
-        "revert_command": "Set-Service -Name 'WSearch' -StartupType Automatic; Start-Service -Name 'WSearch'",
-        "previouslyapplied": false
-      }
+      
     ],
     "Neteja": [
       {
-        "id": 14,
-        "title": "Clear temp files",
-        "description": "Deletes temporary files to free up space.",
-        "command": "Remove-Item -Path $env:TEMP\\\\* -Recurse -Force",
+        "id": 23,
+        "title": "Netejar fitxers temporals",
+        "description": "Elimina fitxers temporals per alliberar espai.",
+        "command": "Remove-Item -Path $env:TEMP\\* -Recurse -Force",
         "check_command": "if (-not (Get-ChildItem -Path $env:TEMP)) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "command",
         "revert_command": "",
         "previouslyapplied": false
       },
       {
-        "id": 15,
-        "title": "Clear Windows Update cache",
-        "description": "Frees up space by removing old Windows Update files.",
-        "command": "Stop-Service wuauserv; Remove-Item -Path 'C:\\Windows\\SoftwareDistribution\\Download\\\\*' -Recurse -Force; Start-Service wuauserv",
+        "id": 24,
+        "title": "Netejar la memòria cau de Windows Update",
+        "description": "Allibera espai eliminant fitxers antics de Windows Update.",
+        "command": "Stop-Service wuauserv; Remove-Item -Path 'C:\\Windows\\SoftwareDistribution\\Download\\*' -Recurse -Force; Start-Service wuauserv",
         "check_command": "if (-not (Get-ChildItem -Path 'C:\\Windows\\SoftwareDistribution\\Download')) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "command",
         "revert_command": "",
@@ -174,57 +257,192 @@
     ],
     "Actualitzacions": [
       {
-        "id": 16,
-        "title": "Pause Windows updates",
-        "description": "Temporarily disables Windows updates.",
-        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'NoAutoUpdate' -Type DWord -Value 1",
-        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'NoAutoUpdate').NoAutoUpdate -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
+        "id": 25,
+        "title": "Desactivar optimització de lliurament de Windows Update",
+        "description": "Desactiva la funció d'optimització de lliurament per evitar actualitzacions P2P.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization' -Name 'DODownloadMode' -Type DWord -Value 0",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization' -Name 'DODownloadMode').DODownloadMode -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'NoAutoUpdate' -Type DWord -Value 0",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization' -Name 'DODownloadMode' -Type DWord -Value 1",
         "previouslyapplied": false
       },
       {
-        "id": 17,
-        "title": "Disable driver updates via Windows Update",
-        "description": "Prevents automatic driver updates through Windows Update.",
-        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching' -Name 'SearchOrderConfig' -Type DWord -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching' -Name 'SearchOrderConfig').SearchOrderConfig -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
+        "id": 26,
+        "title": "Desactivar reinici automàtic després d'actualitzacions",
+        "description": "Desactiva els reinicis automàtics després de les actualitzacions de Windows.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'AUOptions' -Type DWord -Value 1",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'AUOptions').AUOptions -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
         "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching' -Name 'SearchOrderConfig' -Type DWord -Value 1",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'AUOptions' -Type DWord -Value 2",
+        "previouslyapplied": false
+      },
+      {
+        "id": 27,
+        "title": "Desactivar notificacions de Windows Update",
+        "description": "Desactiva les notificacions d'actualitzacions de Windows.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'NoAutoRebootWithLoggedOnUsers' -Type DWord -Value 1",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'NoAutoRebootWithLoggedOnUsers').NoAutoRebootWithLoggedOnUsers -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update' -Name 'NoAutoRebootWithLoggedOnUsers' -Type DWord -Value 0",
         "previouslyapplied": false
       }
     ],
-    "Altres": [
+    "Drivers": [
       {
-        "id": 18,
-        "title": "Disable Cortana",
-        "description": "Removes Cortana from the taskbar and disables it.",
-        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCortana' -Type DWord -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCortana').AllowCortana -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCortana' -Type DWord -Value 1",
+        "id": 28,
+        "title": "Instal·lar els controladors més recents",
+        "description": "Instal·la els controladors més recents per al teu maquinari.",
+        "command": "pnputil /scan-devices",
+        "check_command": "",
+        "operation_type": "command",
+        "revert_command": "",
         "previouslyapplied": false
       },
       {
-        "id": 19,
-        "title": "Disable tips and suggestions",
-        "description": "Stops Windows from showing tips, tricks, and suggestions.",
-        "command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Type DWord -Value 0",
-        "check_command": "if ((Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled').'SubscribedContent-338389Enabled' -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Type DWord -Value 1",
-        "previouslyapplied": false
-      },
-      {
-        "id": 20,
-        "title": "Disable lock screen background image",
-        "description": "Disables the background image on the lock screen.",
-        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen' -Type DWord -Value 1",
-        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen').NoLockScreen -eq 1) { Write-Output 'true' } else { Write-Output 'false' }",
-        "operation_type": "registry",
-        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization' -Name 'NoLockScreen' -Type DWord -Value 0",
+        "id": 29,
+        "title": "Actualitzar tots els controladors",
+        "description": "Actualitza tots els controladors instal·lats a les versions més recents.",
+        "command": "pnputil /update-drivers",
+        "check_command": "",
+        "operation_type": "command",
+        "revert_command": "",
         "previouslyapplied": false
       }
-    ]
+    ],
+    "Seguretat i Manteniment": [
+      {
+        "id": 30,
+        "title": "Activar Windows Defender",
+        "description": "Activa la protecció antivirus de Windows Defender.",
+        "command": "Set-MpPreference -DisableRealtimeMonitoring $false; Start-Service WinDefend",
+        "check_command": "if ((Get-MpPreference).DisableRealtimeMonitoring -eq $false) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -DisableRealtimeMonitoring $true; Stop-Service WinDefend",
+        "previouslyapplied": false
+      },
+      {
+        "id": 31,
+        "title": "Activar el tallafoc de Windows",
+        "description": "Activa el tallafoc de Windows per protegir contra accessos no autoritzats.",
+        "command": "Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True",
+        "check_command": "if ((Get-NetFirewallProfile -Profile Domain,Public,Private).Enabled -contains $true) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False",
+        "previouslyapplied": false
+      },
+      {
+        "id": 32,
+        "title": "Desactivar SmartScreen",
+        "description": "Desactiva SmartScreen per evitar que bloquegi aplicacions i fitxers.",
+        "command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SmartScreenEnabled' -Name 'Enabled' -Type DWord -Value 0",
+        "check_command": "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SmartScreenEnabled' -Name 'Enabled').Enabled -eq 0) { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "registry",
+        "revert_command": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SmartScreenEnabled' -Name 'Enabled' -Type DWord -Value 1",
+        "previouslyapplied": false
+      },
+      {
+        "id": 33,
+        "title": "Activar Windows Defender Exploit Guard",
+        "description": "Activa Exploit Guard per millorar la seguretat del sistema.",
+        "command": "Set-MpPreference -EnableControlledFolderAccess Enabled",
+        "check_command": "if ((Get-MpPreference).EnableControlledFolderAccess -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -EnableControlledFolderAccess Disabled",
+        "previouslyapplied": false
+      },
+      {
+        "id": 34,
+        "title": "Activar protecció contra manipulació de Windows Defender",
+        "description": "Activa la protecció contra manipulació per evitar canvis no autoritzats a la configuració de Windows Defender.",
+        "command": "Set-MpPreference -EnableTamperProtection Enabled",
+        "check_command": "if ((Get-MpPreference).EnableTamperProtection -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -EnableTamperProtection Disabled",
+        "previouslyapplied": false
+      },
+      {
+        "id": 35,
+        "title": "Activar protecció de la xarxa de Windows Defender",
+        "description": "Activa la protecció de la xarxa per bloquejar connexions potencialment perilloses.",
+        "command": "Set-MpPreference -EnableNetworkProtection Enabled",
+        "check_command": "if ((Get-MpPreference).EnableNetworkProtection -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -EnableNetworkProtection Disabled",
+        "previouslyapplied": false
+      },
+      {
+        "id": 36,
+        "title": "Activar bloqueig de scripts de Windows Defender",
+        "description": "Activa el bloqueig de scripts per evitar l'execució de scripts maliciosos.",
+        "command": "Set-MpPreference -EnableScriptScanning Enabled",
+        "check_command": "if ((Get-MpPreference).EnableScriptScanning -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -EnableScriptScanning Disabled",
+        "previouslyapplied": false
+      },
+      {
+        "id": 37,
+        "title": "Activar protecció basada en el núvol de Windows Defender",
+        "description": "Activa la protecció basada en el núvol per millorar la detecció d'amenaces.",
+        "command": "Set-MpPreference -EnableCloudBasedProtection Enabled",
+        "check_command": "if ((Get-MpPreference).EnableCloudBasedProtection -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Set-MpPreference -EnableCloudBasedProtection Disabled",
+        "previouslyapplied": false
+      }
+    ],
+    "Característiques opcionals": [
+      {
+        "id": 38,
+        "title": "Activar Hyper-V",
+        "description": "Habilita Hyper-V, necessari per a màquines virtuals i entorns com WSL2.",
+        "command": "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All -NoRestart",
+        "check_command": "if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All).State -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Disable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All",
+        "previouslyapplied": false
+      },
+      {
+        "id": 39,
+        "title": "Activar Virtual Machine Platform",
+        "description": "Requerit per executar WSL 2 i altres plataformes de virtualització.",
+        "command": "Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All -NoRestart",
+        "check_command": "if ((Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform).State -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Disable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform",
+        "previouslyapplied": false
+      },
+      {
+        "id": 40,
+        "title": "Activar Subsistema de Windows per a Linux",
+        "description": "Habilita el subsistema de Windows per a Linux, necessari per executar distribucions de Linux.",
+        "command": "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -All -NoRestart",
+        "check_command": "if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux).State -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Disable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux",
+        "previouslyapplied": false
+      },
+      {
+        "id": 41,
+        "title": "Activar client OpenSSH",
+        "description": "Habilita el client OpenSSH, necessari per a connexions SSH.",
+        "command": "Enable-WindowsOptionalFeature -Online -FeatureName OpenSSH.Client -All -NoRestart",
+        "check_command": "if ((Get-WindowsOptionalFeature -Online -FeatureName OpenSSH.Client).State -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Disable-WindowsOptionalFeature -Online -FeatureName OpenSSH.Client",
+        "previouslyapplied": false
+      },
+      {
+        "id": 42,
+        "title": "Activar Windows Sandbox",
+        "description": "Habilita Windows Sandbox, un entorn aïllat per executar aplicacions de forma segura.",
+        "command": "Enable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM -All -NoRestart",
+        "check_command": "if ((Get-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM).State -eq 'Enabled') { Write-Output 'true' } else { Write-Output 'false' }",
+        "operation_type": "powershell",
+        "revert_command": "Disable-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM",
+        "previouslyapplied": false
+      }
+    ],
+    "Altres": []
   }
 }
