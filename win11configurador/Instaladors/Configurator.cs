@@ -225,7 +225,7 @@ namespace win11configurador.Installers
         private string GetConfigRealStatus(ConfigurationItem config)
         {
             if (string.IsNullOrWhiteSpace(config.CheckCommand))
-                return "[grey]No comprobable[/]";
+                return "[grey]NO COMPROBABLE[/]";
 
             try
             {
@@ -235,15 +235,15 @@ namespace win11configurador.Installers
                     return "[green]ACTIVADO[/]";
                 else if (output != null && output.Equals("false", StringComparison.OrdinalIgnoreCase))
                     return "[red]DESACTIVADO[/]";
-                else if (!string.IsNullOrWhiteSpace(output) && output.ToLower().Contains("acceso denegado") || output.ToLower().Contains("access is denied"))
+                else if ((output.ToLower().Contains("acceso denegado") || output.ToLower().Contains("access is denied") || output.ToLower().Contains("solicitada requiere elevaci") ))
                 {
-                    // Preguntar al usuario si quiere elevar a administrador
-                    bool elevar = AnsiConsole.Confirm("[yellow]Permiso denegado. ¿Quieres intentar ejecutar como administrador?[/]");
+                    bool elevar = AnsiConsole.Confirm("[yellow]Permiso denegado. ¿Quieres reiniciar el programa como administrador?[/]");
                     if (elevar)
                     {
-                        // Aquí podrías relanzar el programa como admin o mostrar un mensaje
-                        AnsiConsole.MarkupLine("[yellow]Por favor, reinicia la aplicación como administrador.[/]");
-                        return "[yellow]Requiere privilegios de administrador[/]";
+                        RestartAsAdmin();
+                        // El proceso actual terminará aquí si el usuario acepta el UAC.
+                        // Si el usuario cancela el UAC, el proceso sigue y muestra el warning.
+                        return "[yellow]Intentando elevar permisos...[/]";
                     }
                     else
                     {
@@ -265,5 +265,35 @@ namespace win11configurador.Installers
                 return $"[red]Error![/] {Markup.Escape(ex.Message)}";
             }
         }
+        private void RestartAsAdmin()
+        {
+            var exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (exeName == null)
+            {
+                AnsiConsole.MarkupLine("[red]No se pudo determinar el ejecutable actual.[/]");
+                return;
+            }
+
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exeName,
+                UseShellExecute = true,
+                Verb = "runas" // Esto muestra el UAC
+            };
+
+            try
+            {
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]No se pudo elevar a administrador: {Markup.Escape(ex.Message)}[/]");
+                return;
+            }
+
+            // Finaliza el proceso actual
+            Environment.Exit(0);
+        }
+
     }
 }

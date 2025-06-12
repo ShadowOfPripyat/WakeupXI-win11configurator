@@ -2,7 +2,7 @@
 using win11configurador.Managers;
 using win11configurador.Installers;
 using win11configurador.plantillesjson;
-
+using Spectre.Console; // Añadido
 
 namespace Instalador
 {
@@ -10,40 +10,47 @@ namespace Instalador
     {
         static void Main(string[] args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8; // Ensure UTF-8 encoding for console output
-            PowerShellExecutor.ExecuteCommand("ipconfig", true); // Example command to test PowerShell execution
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            PowerShellExecutor.ExecuteCommand("ipconfig", true);
             menu();
         }
+
         static void menu()
         {
-           bool sortir =false;
-            do {
+            bool sortir = false;
+            do
+            {
                 Console.Clear();
-                Console.WriteLine("=== Windows Configurator ===");
-                Console.WriteLine("1. Configure Windows System");
-                Console.WriteLine("2. Install Programs via Winget");
-                Console.WriteLine("3. Install Programs Manually");
-                Console.WriteLine("4. Exit");
-                Console.Write("Select an option: ");
-                string choice = Console.ReadLine();
+                AnsiConsole.Write(
+                    new FigletText("WakeupXII")
+                        .Centered()
+                        //.Color(Color.Cyan1)
+                        );
+
+                var choice = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[yellow]Selecciona una opción:[/]")
+                        .AddChoices(new[]
+                        {
+                                "1. Configurar sistema Windows",
+                                "2. Instalar programas con Winget",
+                                "3. Instalar programas manualmente",
+                                "4. Salir"
+                        }));
 
                 switch (choice)
                 {
-                    case "1":
+                    case "1. Configurar sistema Windows":
                         new Configurator().Run();
                         break;
-                    case "2":
+                    case "2. Instalar programas con Winget":
                         new WingetInstaller().Run();
                         break;
-                    case "3":
+                    case "3. Instalar programas manualmente":
                         new ManualInstaller().Run();
                         break;
-                    case "4":
+                    case "4. Salir":
                         sortir = true;
-                        break;
-                    default:
-                        Console.WriteLine("Invalid option.");
-                        menu();
                         break;
                 }
             } while (!sortir);
