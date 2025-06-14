@@ -1,118 +1,184 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
+﻿using System.Diagnostics;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
-using win11configurador.plantillesjson;
+using Spectre.Console;
 using win11configurador.Managers;
+using win11configurador.plantillesjson;
+using SharpCompress.Archives;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Common;
 
 namespace win11configurador.Installers
 {
     public class ManualInstaller
     {
-        private readonly string downloadPath = "manualprograms"; // Folder to save downloaded files
+        private readonly string downloadPath = "manualprograms";
 
-        public async Task Run() // <-- Cambiado a async Task
+        public async Task Run()
         {
-            List<ManualProgram> items = LectorJson.LoadJson<ManualProgram>("programes.json");
+            // Llama correctamente al método estático de LectorJson y usa la ruta completa
+            var items = LectorJson.LoadManualPrograms(".\\Dades\\programes.json");
 
             if (items == null || items.Count == 0)
             {
-                Console.WriteLine("\nNo se encontraron programas disponibles. Pulsa cualquier tecla para volver al menú principal.");
-                Console.ReadKey();
+                AnsiConsole.Write(
+                    new Panel("[yellow]No se encontraron programas manuales disponibles.[/]")
+                        .Border(BoxBorder.Rounded)
+                        .Header("[bold red]Atención[/]", Justify.Center)
+                        .Padding(1, 1));
+                AnsiConsole.MarkupLine("[grey]Pulsa cualquier tecla para volver al menú principal.[/]");
+                AnsiConsole.Console.Input.ReadKey(true);
                 return;
             }
 
-            Directory.CreateDirectory(downloadPath);
+            if (!Directory.Exists(downloadPath))
+                Directory.CreateDirectory(downloadPath);
 
-            List<ManualProgram> msiList = new();
-            List<ManualProgram> exeList = new();
+            // Mostrar selección de programas
+            var noInstalados = items.Where(i => !i.PreviouslyInstalled).ToList();
+            if (noInstalados.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]Todos los programas ya se instalaron previamente.[/]");
+                return;
+            }
 
-            using HttpClient ClientHTTP = new HttpClient(); // <-- HttpClient reutilizable
+            var prompt = new MultiSelectionPrompt<ManualProgram>()
+                .Title("[bold]Selecciona los programas a instalar manualmente:[/]")
+                .PageSize(12)
+                .MoreChoicesText("[grey](Usa las flechas para navegar, <espacio> para seleccionar, <enter> para confirmar)[/]")
+                .InstructionsText("[grey](Presiona <espacio> para alternar selección, <enter> para aceptar)[/]")
+                .UseConverter(p => $"{p.Name} [grey]({p.Description})[/]");
 
-            foreach (ManualProgram program in items.Where(i => !i.PreviouslyInstalled))
+            prompt.AddChoices(noInstalados);
+
+            var seleccionados = AnsiConsole.Prompt(prompt);
+            if (seleccionados.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]No se seleccionaron programas. Saliendo...[/]");
+                return;
+            }
+
+            using HttpClient client = new();
+
+            foreach (var program in seleccionados)
             {
                 string fullPath = Path.Combine(downloadPath, program.FileName);
 
-                // Download if not already downloaded
+                // Descargar si no existe
                 if (!File.Exists(fullPath))
                 {
-                    Console.WriteLine($"Downloading: {program.Name}...");
-                    try
-                    {
-                        using var response = await ClientHTTP.GetAsync(program.DownloadUrl);
-                        response.EnsureSuccessStatusCode();
-                        using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    AnsiConsole.Status()
+                        .Spinner(Spinner.Known.Dots)
+                        .SpinnerStyle(Style.Parse("yellow"))
+                        .Start($"[yellow]Descargando: {program.Name}[/]", async ctx =>
                         {
-                            await response.Content.CopyToAsync(fs);
-                        }
-                        Console.WriteLine($"Downloaded: {program.FileName}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to download {program.Name}: {ex.Message}");
-                        continue;
-                    }
+                            try
+                            {
+                                using var response = await client.GetAsync(program.DownloadUrl);
+                                response.EnsureSuccessStatusCode();
+                                using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                                await response.Content.CopyToAsync(fs);
+                                AnsiConsole.MarkupLine($"[green]✔ Descargado:[/] [bold]{program.FileName}[/]");
+                            }
+                            catch (Exception ex)
+                            {
+                                AnsiConsole.MarkupLine($"[red]Error al descargar {program.Name}: {ex.Message}[/]");
+                            }
+                        });
                 }
 
-                // Unzip or classify
-                if (fullPath.EndsWith(".zip"))
+                // Procesar según extensión
+                if (fullPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || fullPath.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
                 {
-                    string extractPath = Path.Combine(downloadPath, $"{program.Name}_extracted");
+                    string extractPath = Path.Combine(downloadPath, $"{Path.GetFileNameWithoutExtension(program.FileName)}_extracted");
                     try
                     {
-                        ZipFile.ExtractToDirectory(fullPath, extractPath, true);
-                        string exe = Directory.GetFiles(extractPath, "*.exe", SearchOption.AllDirectories).FirstOrDefault();
-
-                        if (exe != null)
+                        if (fullPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                         {
-                            Console.WriteLine($"\nFound installer: {exe}. Proceed? (y/n)");
-                            if (Console.ReadLine()?.ToLower() == "y")
-                                Process.Start(exe).WaitForExit();
+                            ZipFile.ExtractToDirectory(fullPath, extractPath, true);
+                        }
+                        else if (fullPath.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
+                        {
+                            using var archive = SevenZipArchive.Open(fullPath);
+                            foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
+                            {
+                                entry.WriteToDirectory(extractPath, new ExtractionOptions()
+                                {
+                                    ExtractFullPath = true,
+                                    Overwrite = true
+                                });
+                            }
+                        }
+
+                        // Buscar ejecutable
+                        var exes = Directory.GetFiles(extractPath, "*.exe", SearchOption.AllDirectories);
+                        string exeToRun = null;
+
+                        // Buscar por nombre esperado
+                        exeToRun = exes.FirstOrDefault(e => Path.GetFileName(e).Equals(program.FileName, StringComparison.OrdinalIgnoreCase));
+                        if (exeToRun == null && exes.Length == 1)
+                        {
+                            exeToRun = exes[0];
+                        }
+                        else if (exeToRun == null && exes.Length > 1)
+                        {
+                            // Preguntar al usuario cuál ejecutar
+                            exeToRun = AnsiConsole.Prompt(
+                                new SelectionPrompt<string>()
+                                    .Title($"[yellow]No se encontró un instalador exacto para [bold]{program.Name}[/]. ¿Cuál de estos ejecutables quieres lanzar?[/]")
+                                    .AddChoices(exes)
+                            );
+                        }
+
+                        if (exeToRun != null)
+                        {
+                            bool ejecutar = AnsiConsole.Confirm($"[yellow]¿Quieres ejecutar el instalador encontrado?[/]\n[grey]{exeToRun}[/]");
+                            if (ejecutar)
+                            {
+                                Process.Start(new ProcessStartInfo(exeToRun) { UseShellExecute = true }).WaitForExit();
+                            }
                         }
                         else
                         {
-                            Console.WriteLine($"No .exe found in extracted folder for {program.Name}.");
+                            AnsiConsole.MarkupLine($"[red]No se encontró ningún instalador ejecutable para {program.Name}.[/]");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error extracting {program.Name}: {ex.Message}");
+                        AnsiConsole.MarkupLine($"[red]Error extrayendo {program.Name}: {ex.Message}[/]");
                     }
                 }
-                else if (fullPath.EndsWith(".msi"))
+                else if (fullPath.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
                 {
-                    msiList.Add(program);
+                    AnsiConsole.Status()
+                        .Spinner(Spinner.Known.Dots)
+                        .SpinnerStyle(Style.Parse("yellow"))
+                        .Start($"[yellow]Instalando silenciosamente: {program.Name}[/]", ctx =>
+                        {
+                            Process.Start("msiexec", $"/i \"{fullPath}\" /quiet").WaitForExit();
+                        });
+                    AnsiConsole.MarkupLine($"[green]✔ Instalado:[/] [bold]{program.Name}[/]");
                 }
-                else if (fullPath.EndsWith(".exe"))
+                else if (fullPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    exeList.Add(program);
+                    bool ejecutar = AnsiConsole.Confirm($"[yellow]¿Quieres ejecutar el instalador para [bold]{program.Name}[/]?[/]");
+                    if (ejecutar)
+                    {
+                        Process.Start(new ProcessStartInfo(fullPath) { UseShellExecute = true }).WaitForExit();
+                    }
                 }
-            }
-
-            // Install MSIs silently
-            foreach (var msi in msiList)
-            {
-                string path = Path.Combine(downloadPath, msi.FileName);
-                Console.WriteLine($"Installing silently: {msi.Name}");
-                Process.Start("msiexec", $"/i \"{path}\" /quiet").WaitForExit();
-            }
-
-            // Prompt user for each EXE
-            foreach (var exe in exeList)
-            {
-                string path = Path.Combine(downloadPath, exe.FileName);
-                Console.WriteLine($"\nRun installer for: {exe.Name}? (y/n)");
-                if (Console.ReadLine()?.ToLower() == "y")
+                else
                 {
-                    Process.Start(path).WaitForExit();
+                    AnsiConsole.MarkupLine($"[red]Formato de archivo no soportado para {program.Name}.[/]");
                 }
             }
 
-            Console.WriteLine("\nInstalació manual completada.");
-            Console.ReadKey();
+            AnsiConsole.Write(
+                new Panel("[grey]Instalación manual completada. Pulsa cualquier tecla para volver al menú principal.[/]")
+                    .Border(BoxBorder.Rounded)
+                    .Header("[bold]Fin[/]", Justify.Center)
+                    .Padding(1, 1));
+            AnsiConsole.Console.Input.ReadKey(true);
+            AnsiConsole.Console.Clear();
         }
     }
 }

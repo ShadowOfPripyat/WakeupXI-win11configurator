@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using win11configurador.Installers;
 using win11configurador.plantillesjson;
 
@@ -134,6 +135,25 @@ namespace win11configurador.Managers
                 Console.WriteLine($"Error cargando JSON: {ex.Message}");
                 return new Dictionary<string, List<ConfigurationItem>>();
             }
+        }
+        public static List<ManualProgram> LoadManualPrograms(string path)
+        {
+            var json = File.ReadAllText(path);
+            var root = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var allPrograms = root["All Programs"];
+            var result = new List<ManualProgram>();
+
+            foreach (var category in allPrograms.Children<JProperty>())
+            {
+                string categoryName = category.Name;
+                foreach (var prog in category.Value)
+                {
+                    var manualProg = prog.ToObject<ManualProgram>();
+                    manualProg.Category = categoryName;
+                    result.Add(manualProg);
+                }
+            }
+            return result;
         }
 
     }

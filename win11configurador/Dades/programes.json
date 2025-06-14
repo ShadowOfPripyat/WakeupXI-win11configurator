@@ -1,10 +1,43 @@
-[
-  {
-    "Category": "Tools",
-    "Id": 1,
-    "Name": "7-Zip",
-    "FileName": "7zSetup.exe",
-    "DownloadUrl": "https://www.7-zip.org/a/7z2301.exe",
-    "PreviouslyInstalled": false
-  }
-]
+{
+  "All Programs": {
+    "Sistema": [
+      {
+        "id": 1,
+        "name": "WinAero OneClickFirewall",
+        "description": "Permite bloquear el acceso a internet a programas con un solo click.",
+        "filename": "OneClickFirewall.zip",
+        "direct_download_url": "https://winaero.com/downloads/OneClickFirewall.zip",
+        "previously_installed": false
+      }
+     ],
+     "Multimedia": [
+      {
+        "id": 1,
+        "name": "Davinci Resolve 20",
+        "description": "Software de edición de video profesional.",
+        "filename": "Davinci_Resolve_20.zip",
+        "direct_download_url": "https://swr.cloud.blackmagicdesign.com/DaVinciResolve/v20.0/DaVinci_Resolve_20.0_Windows.zip?verify=1749861467-vOuIMIRTvwShWcsiDScOD7WnFX3tGGO7zQne3mCEssw%3D",
+        "previously_installed": false
+      },
+      {
+        "id": 2,
+        "name": "Vital Synth",
+        "description": "Sintetizador de software avanzado.",
+        "filename": "VitalInstaller.exe",
+        "direct_download_url": "https://archive.org/download/vital-installer/VitalInstaller.exe",
+        "previously_installed": false
+      }
+      ],
+    "Drivers": [
+      {
+        "id": 1,
+        "name": "Nvidia App",
+        "description": "Controlador de Nvidia para tarjetas gráficas.",
+        "filename": "NVIDIA_app_v11.0.4.148.exe",
+        "direct_download_url": "https://es.download.nvidia.com/nvapp/client/11.0.4.148/NVIDIA_app_v11.0.4.148.exe",
+        "previously_installed": false
+      }
+    ]
+  }  
+}
+
