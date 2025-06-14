@@ -43,6 +43,11 @@ namespace win11configurador.Installers
 
                 // Comprobar estado real con spinner
                 var realStatuses = new Dictionary<string, string>();
+                // 1. Lista para las confirmaciones pendientes
+                var confirmacionesPendientes = new List<ConfigurationItem>();
+
+                // 2. Comprobar estado real con spinner
+                //var realStatuses = new Dictionary<string, string>();
                 AnsiConsole.Status()
                     .Spinner(Spinner.Known.Dots)
                     .SpinnerStyle(Style.Parse("yellow"))
@@ -50,7 +55,32 @@ namespace win11configurador.Installers
                     {
                         foreach (var config in distinctConfigs)
                         {
-                            realStatuses[config.ObtenirID()] = GetConfigRealStatus(config);
+                            var (estado, necesitaConfirmacion) = GetConfigRealStatus(config);
+                            realStatuses[config.ObtenirID()] = estado;
+                            if (necesitaConfirmacion)
+                                confirmacionesPendientes.Add(config);
+                        }
+                    });
+
+                // 3. Mostrar los prompts de confirmación después del spinner
+                foreach (var config in confirmacionesPendientes)
+                {
+                    bool elevar = AnsiConsole.Confirm($"[yellow]Permiso denegado para '{config.Title}'. ¿Quieres reiniciar el programa como administrador?[/]");
+                    if (elevar)
+                    {
+                        RestartAsAdmin();
+                        // Si el usuario acepta, el proceso termina aquí.
+                        // Si no, puedes actualizar el estado si lo deseas.
+                    }
+                }
+                AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Dots)
+                    .SpinnerStyle(Style.Parse("yellow"))
+                    .Start("[yellow]Comprobando estado real de las configuraciones...[/]", ctx =>
+                    {
+                        foreach (var config in distinctConfigs)
+                        {
+                            realStatuses[config.ObtenirID()] = GetConfigRealStatus(config).Estado;
                         }
                     });
 
@@ -222,47 +252,41 @@ namespace win11configurador.Installers
             AnsiConsole.Console.Clear();
         }
 
-        private string GetConfigRealStatus(ConfigurationItem config)
+        private (string Estado, bool NecesitaConfirmacion) GetConfigRealStatus(ConfigurationItem config)
         {
             if (string.IsNullOrWhiteSpace(config.CheckCommand))
-                return "[grey]NO COMPROBABLE[/]";
+                return ("[grey]NO COMPROBABLE[/]", false);
 
             try
             {
                 string output = PowerShellExecutor.ExecuteCommand(config.CheckCommand, true)?.Trim();
 
                 if (output != null && output.Equals("true", StringComparison.OrdinalIgnoreCase))
-                    return "[green]ACTIVADO[/]";
+                    return ("[green]ACTIVADO[/]", false);
                 else if (output != null && output.Equals("false", StringComparison.OrdinalIgnoreCase))
-                    return "[red]DESACTIVADO[/]";
-                else if ((output.ToLower().Contains("acceso denegado") || output.ToLower().Contains("access is denied") || output.ToLower().Contains("solicitada requiere elevaci") ))
+                    return ("[red]DESACTIVADO[/]", false);
+                else if ((output?.ToLower().Contains("acceso denegado") == true
+                          || output.ToLower().Contains("access is denied")
+                          || output.ToLower().Contains("solicitada requiere elevaci")))
                 {
-                    bool elevar = AnsiConsole.Confirm("[yellow]Permiso denegado. ¿Quieres reiniciar el programa como administrador?[/]");
-                    if (elevar)
-                    {
-                        RestartAsAdmin();
-                        // El proceso actual terminará aquí si el usuario acepta el UAC.
-                        // Si el usuario cancela el UAC, el proceso sigue y muestra el warning.
-                        return "[yellow]Intentando elevar permisos...[/]";
-                    }
-                    else
-                    {
-                        return "[yellow]Permiso denegado (no elevado)[/]";
-                    }
+                    return ("[yellow]FALLO EN LA COMPROVACIÓN:(ACCESO DENEGADO)[/]", true);
                 }
                 else if (!string.IsNullOrWhiteSpace(output))
                 {
-                    // Escapar cualquier error para evitar markup
-                    return $"[yellow]{Markup.Escape(output)}[/]";
+                    return ($"[yellow]{Markup.Escape(output)}[/]", false);
                 }
                 else
                 {
-                    return "[grey]Desconocido[/]";
+                    return ("[grey]Desconocido[/]", false);
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ($"[red]Error![/] {Markup.Escape(PowerShellExecutor.ExecuteCommand(config.CheckCommand, true)?.Trim())}", false);
             }
             catch (Exception ex)
             {
-                return $"[red]Error![/] {Markup.Escape(ex.Message)}";
+                return ($"[red]Error![/] {Markup.Escape(ex.Message)}", false);
             }
         }
         private void RestartAsAdmin()
@@ -287,7 +311,7 @@ namespace win11configurador.Installers
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]No se pudo elevar a administrador: {Markup.Escape(ex.Message)}[/]");
+                AnsiConsole.MarkupLine($"[red]No se pudo elevar a administrador: Se ha cancelado el prompt UAC.[/]");
                 return;
             }
 
